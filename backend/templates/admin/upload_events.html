@@ -1,0 +1,32 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+
+    Загрузка мероприятий из Excel-файла
+    <hr>
+    <br>
+
+    Документ должен содержать:
+    • Название
+    • Описание
+    • Дата и время публикации
+    • Дата и время начала проведения
+    • Дата и время завершения проведения
+    • Название места проведения
+    • Гео-координаты места
+    • Рейтинг (от 0 до 25)
+
+    <hr>
+    <br>
+
+    <div>
+        <form action="." method="POST" enctype="multipart/form-data">
+            {{ form.as_p }}
+            {% csrf_token %}
+
+                <button type="submit">Загрузить Excel файл</button>
+        </form>
+    </div>
+    <br />
+
+{% endblock %}

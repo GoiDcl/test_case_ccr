@@ -1,0 +1,24 @@
+services:
+  backend:
+    restart: unless-stopped
+    command: python manage.py runserver 0.0.0.0:8000
+    entrypoint: sh wait-for db:5432 -- ./entrypoint.sh
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend/:/app/
+      - ./backend/static:/app/static/
+      - ./backend/media:/app/media/
+
+  db:
+    restart: unless-stopped
+    ports:
+      - 15120:5432
+
+  redis:
+    restart: unless-stopped
+
+  celery:
+    restart: unless-stopped
+    volumes:
+      - ./backend/:/app/

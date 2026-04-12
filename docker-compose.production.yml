@@ -1,0 +1,161 @@
+x-app_environment: &app_environment
+  environment:
+    - DEBUG
+    - CELERY_BROKER_URL
+    - ALLOWED_HOSTS
+    - SECRET_KEY
+    - ENABLE_API
+    - POSTGRES_NAME
+    - POSTGRES_USER
+    - POSTGRES_HOST
+    - POSTGRES_PORT
+    - POSTGRES_PASSWORD
+
+services:
+  backend:
+    image: python:3.12-slim
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+      replicas: ${BACKEND_REPLICAS:-1}
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 25s
+        order: start-first
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s -o /dev/null -I -w '%{http_code}' http://0.0.0.0:8000/healthcheck/ | grep '200' || exit 1" ]
+      interval: 10s
+      timeout: 15s
+      retries: 10
+      start_period: 45s
+    build:
+      context: ./backend
+    <<: *app_environment
+    volumes:
+      - static:/app/static/:delegated
+    entrypoint: sh wait-for db:5432 -- ./entrypoint.production.sh
+    command: >
+      gunicorn config.wsgi:application -w ${WORKER_COUNT:-4} -t 120 --keep-alive 120 -b 0.0.0.0:8000
+      --max-requests ${MAX_REQUEST_BASE}0 --max-requests-jitter ${MAX_REQUEST_BASE} --access-logfile - --error-logfile -
+      --access-logformat '{"date":"%(t)s","method":"%(m)s","path":"%(U)s","query":"%(q)s","protocol":"%(H)s","status":%(s)s,"response_size":%(B)s,"referer":"%(f)s","user_agent":"%(a)s","time":%(D)s,"ip":"%({x-real-ip}i)s"}'
+    depends_on:
+      - db
+      - redis
+    logging:
+      driver: journald
+      options:
+        tag: backend
+
+  db:
+    image: postgres:17-alpine
+    restart: always
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.role == manager ]
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=6GB" # 25% от текущей оперативной памяти
+      - "-c"
+      - "effective_cache_size=4GB"
+      - "-c"
+      - "work_mem=32MB" # shared_buffers поделить на max_connections. Если получается меньше 32МБ, то оставить 32МБ
+      - "-c"
+      - "maintenance_work_mem=1GB" # 10% от оперативной памяти
+      - "-c"
+      - "temp_file_limit=10GB"
+      - "-c"
+      - "idle_in_transaction_session_timeout=10s"
+      - "-c"
+      - "lock_timeout=5s"
+      - "-c"
+      - "statement_timeout=60s"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.max=10000"
+      - "-c"
+      - "pg_stat_statements.track=all"
+      - "-c"
+      - "jit=off"
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD
+      - POSTGRES_HOST_AUTH_METHOD
+      - POSTGRES_DB
+      - POSTGRES_USER
+    ports:
+      - 127.0.0.1:5432:5432
+    logging:
+      driver: journald
+      options:
+        tag: db
+
+  redis:
+    image: redis:8.0-alpine
+    restart: always
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [ node.role == manager ]
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 8s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - redisdata:/data
+    logging:
+      driver: journald
+      options:
+        tag: redis
+
+  celery:
+    image: python:3.12-slim
+    restart: always
+    command: celery -A config worker -l info -n celery@worker.main --concurrency=1
+    deploy:
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config.celery inspect ping -d celery@worker.main| grep OK || exit 1"]
+      interval: 30s
+      timeout: 45s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      - db
+      - redis
+    build:
+      context: ./backend
+    <<: *app_environment
+    volumes:
+      - static:/app/static/:ro
+    logging:
+      driver: journald
+      options:
+        tag: celery
+
+volumes:
+  static:
+  redisdata:
+  postgresdata:
