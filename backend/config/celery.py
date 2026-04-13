@@ -15,6 +15,10 @@ app.conf.beat_schedule = {
          "task": "event_app.tasks.weather_forecasts_update_task",
          "schedule": crontab(minute="*/5"),
      },
+    "check_event_statuses": {
+        "task": "event_app.tasks.check_event_statuses",
+        "schedule": crontab(minute="*/5"),
+    },
 }
 
 @setup_logging.connect

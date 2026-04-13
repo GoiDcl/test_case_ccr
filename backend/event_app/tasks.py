@@ -10,7 +10,7 @@ from event_app.models import Event, EventLocation, WeatherForecast
 
 
 def _find_cell_name(workbook):
-    """Находим столбец с названиями мероприятий"""
+    """Находим столбец с названиями мероприятий."""
     cell_tuple = namedtuple('CellFlat', ['col', 'row'])
     try:
         for w in workbook:
@@ -20,9 +20,10 @@ def _find_cell_name(workbook):
     except Exception:
         raise
 
+
 @shared_task
 def import_excel_events_file_task(excel_file):
-    """Загрузка файла Excel со старыми ценами квартир."""
+    """Загрузка файла Excel с мероприятиями."""
     workbook = load_workbook(excel_file, read_only=True)
     wb = workbook.active
     cellname = _find_cell_name(wb)
@@ -82,6 +83,7 @@ def import_excel_events_file_task(excel_file):
 
 @shared_task
 def check_event_statuses():
+    """Проверка и обновление статусов мероприятий, рассылка при начале мероприятия."""
     events = Event.objects.filter(status=EventStatusChoices.PENDING)
     events_to_update = []
     events_to_notify = []
@@ -99,10 +101,12 @@ def check_event_statuses():
         for event in events_to_notify:
             event.send_email()
 
+
 @shared_task
 def weather_forecasts_update_task():
+    """Периодическое обновление прогноза погоды в местах проведения мероприятий."""
     locations = EventLocation.objects.all()
-    fields = ["temperature", "humidity", "atmospheric_pressure", "wind_direction", "wind_speed"]
+    fields = ['temperature', 'humidity', 'atmospheric_pressure', 'wind_direction', 'wind_speed']
     forecasts = []
     new_forecasts = []
     for location in locations:
@@ -134,4 +138,3 @@ def weather_forecasts_update_task():
         WeatherForecast.objects.bulk_update(forecasts, fields)
     if new_forecasts:
         WeatherForecast.objects.bulk_create(new_forecasts)
-

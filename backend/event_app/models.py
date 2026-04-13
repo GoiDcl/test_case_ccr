@@ -127,7 +127,7 @@ class Event(models.Model):
             ):
                 raise ValidationError('Нельзя установить прошедшую дату для нового мероприятия')
 
-    def send_mail(self):
+    def send_email(self):
         to = ['123@lol.com']
         context = {
             'location_name': self.location.name,
