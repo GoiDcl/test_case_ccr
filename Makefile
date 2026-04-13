@@ -1,14 +1,26 @@
-build:
+dev_build:
 	docker-compose -f docker-compose.yml -f docker-compose.override.yml build
 
-up:
+dev_up:
 	docker-compose -f docker-compose.yml -f docker-compose.override.yml up
 
-redis_up:
-	docker-compose up redis
+dev_up_bg:
+	docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+
+prod_build:
+	docker-compose -f docker-compose.yml -f docker-compose.production.yml build
+
+prod_up:
+	docker-compose -f docker-compose.yml -f docker-compose.production.yml up
+
+prod_up_bg:
+	docker-compose -f docker-compose.yml -f docker-compose.production.yml up -d
 
 down:
 	docker-compose down
+
+down_volumes:
+	docker-compose down -v
 
 exec_backend:
 	docker-compose exec backend sh

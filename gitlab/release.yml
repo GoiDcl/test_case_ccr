@@ -1,0 +1,65 @@
+release:backend_after_tests:
+  stage: release
+  rules:
+    - if: '$SECURITY_SCHEDULE == "true"'
+      when: never
+    - if: '$RUN_TESTS != "yes"'
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(master|develop)$/
+      changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - gitlab/build.yml
+        - gitlab/release.yml
+        - docker-compose.yml
+        - docker-compose.production.yml
+  script:
+    - TAG=${CI_COMMIT_SHA} docker compose -f docker-compose.yml -f docker-compose.production.yml pull backend
+    - docker tag ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_REF_SLUG}
+    - TAG=${CI_COMMIT_REF_SLUG} docker compose -f docker-compose.production.yml push backend
+  needs:
+    - job: "build:backend"
+    - job: "test:backend"
+    - job: "test:migrations"
+      optional: true
+
+release:backend_without_tests:
+  stage: release
+  rules:
+    - if: '$SECURITY_SCHEDULE == "true"'
+      when: never
+    - if: '$RUN_TESTS == "yes"'
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(master|develop)$/
+      changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - gitlab/build.yml
+        - gitlab/release.yml
+        - docker-compose.yml
+        - docker-compose.production.yml
+  script:
+    - TAG=${CI_COMMIT_SHA} docker compose -f docker-compose.yml -f docker-compose.production.yml pull backend
+    - docker tag ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_REF_SLUG}
+    - TAG=${CI_COMMIT_REF_SLUG} docker compose -f docker-compose.production.yml push backend
+  needs:
+    - job: "build:backend"
+
+release:nginx:
+  stage: release
+  rules:
+    - if: '$SECURITY_SCHEDULE == "true"'
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(master|develop)$/
+      changes:
+        - nginx/**/*
+        - .gitlab-ci.yml
+        - gitlab/build.yml
+        - gitlab/release.yml
+        - docker-compose.yml
+        - docker-compose.production.yml
+  script:
+    - TAG=${CI_COMMIT_SHA} docker compose -f docker-compose.yml -f docker-compose.production.yml pull nginx
+    - docker tag ${CI_REGISTRY_IMAGE}/nginx:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/nginx:${CI_COMMIT_REF_SLUG}
+    - TAG=${CI_COMMIT_REF_SLUG} docker compose -f docker-compose.production.yml push nginx
+  needs: ["build:nginx"]

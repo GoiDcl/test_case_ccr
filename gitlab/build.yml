@@ -1,0 +1,37 @@
+build:backend:
+  stage: build
+  script:
+    - TAG=${CI_COMMIT_REF_SLUG} docker compose -f docker-compose.yml -f docker-compose.production.yml pull backend || true
+    - TAG=${CI_COMMIT_SHA} CACHE_FROM_TAG=${CI_COMMIT_REF_SLUG} docker compose -f docker-compose.yml -f docker-compose.production.yml build backend
+    - TAG=${CI_COMMIT_SHA} docker compose -f docker-compose.yml -f docker-compose.production.yml push backend
+  rules:
+    - if: '$SECURITY_SCHEDULE == "true"'
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(master|develop)$/
+      changes:
+        - backend/**/*
+        - gitlab/build.yml
+        - gitlab/test.yml
+        - gitlab/release.yml
+        - .gitlab-ci.yml
+        - docker-compose.yml
+        - docker-compose.test.yml
+        - docker-compose.production.yml
+
+build:nginx:
+  stage: build
+  script:
+    - TAG=${CI_COMMIT_REF_SLUG} docker compose -f docker-compose.yml -f docker-compose.production.yml pull nginx || true
+    - TAG=${CI_COMMIT_SHA} CACHE_FROM_TAG=${CI_COMMIT_REF_SLUG} docker compose -f docker-compose.yml -f docker-compose.production.yml build nginx
+    - TAG=${CI_COMMIT_SHA} docker compose -f docker-compose.yml -f docker-compose.production.yml push nginx
+  rules:
+    - if: '$SECURITY_SCHEDULE == "true"'
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(master|develop)$/
+      changes:
+        - nginx/**/*
+        - gitlab/build.yml
+        - gitlab/release.yml
+        - .gitlab-ci.yml
+        - docker-compose.yml
+        - docker-compose.production.yml

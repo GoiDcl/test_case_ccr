@@ -1,0 +1,74 @@
+.before_script_docker_login: &before_script_docker_login
+  echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+.before_script_envsubst: &before_script_envsubst
+  apk --update add --no-cache gettext
+
+test:backend:
+  stage: test
+  rules:
+    - if: '$SECURITY_SCHEDULE == "true"'
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(master|docker-swarm|develop)$/ && $RUN_TESTS == "yes"
+      changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - gitlab/build.yml
+        - gitlab/test.yml
+        - docker-compose.yml
+        - docker-compose.test.yml
+        - docker-compose.production.yml
+  before_script:
+    - *before_script_docker_login
+    - *before_script_envsubst
+  script:
+    - envsubst < docker-compose.test.yml > docker-compose.test.yml
+    - TAG=${CI_COMMIT_SHA} docker-compose -f docker-compose.test.yml pull backend
+    - TAG=${CI_COMMIT_SHA} docker-compose --project-name test-backend -f docker-compose.test.yml up -d db_${CI_COMMIT_SHORT_SHA}
+    - |
+      until docker exec test-backend-db_${CI_COMMIT_SHORT_SHA}-1 pg_isready -U postgres; do
+        echo "Waiting for postgres container to be ready..."
+        sleep 2
+      done
+    - TAG=${CI_COMMIT_SHA} docker exec test-backend-db_${CI_COMMIT_SHORT_SHA}-1 /bin/sh -c "psql -U postgres -d template1 -c 'CREATE EXTENSION IF NOT EXISTS hstore;'"
+    - >
+      TAG=${CI_COMMIT_SHA} docker-compose --project-name test-backend -f docker-compose.test.yml 
+      run --rm backend /bin/sh -c "poetry run pytest -vv --no-migrations -p no:warnings" --remove-orphans
+  after_script:
+    - docker rm $(docker stop test-backend-db_${CI_COMMIT_SHORT_SHA}-1)
+  needs: ["build:backend"]
+
+
+test:migrations:
+  stage: test
+  rules:
+    - if: '$SECURITY_SCHEDULE == "true"'
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^(master|docker-swarm|develop)$/ && $RUN_TESTS == "yes"
+      changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - gitlab/build.yml
+        - gitlab/test.yml
+        - docker-compose.yml
+        - docker-compose.test.yml
+        - docker-compose.production.yml
+  before_script:
+    - *before_script_docker_login
+    - *before_script_envsubst
+  script:
+    - envsubst < docker-compose.test.yml > docker-compose.test.yml
+    - TAG=${CI_COMMIT_SHA} docker-compose -f docker-compose.test.yml pull backend
+    - TAG=${CI_COMMIT_SHA} docker-compose --project-name test-migrations -f docker-compose.test.yml up -d db_${CI_COMMIT_SHORT_SHA} --remove-orphans
+    - |
+      until docker exec test-migrations-db_${CI_COMMIT_SHORT_SHA}-1 pg_isready -U postgres; do
+        echo "Waiting for postgres container to be ready..."
+        sleep 2
+      done
+    - TAG=${CI_COMMIT_SHA} docker exec test-migrations-db_${CI_COMMIT_SHORT_SHA}-1 /bin/sh -c "psql -U postgres -d template1 -c 'CREATE EXTENSION IF NOT EXISTS hstore;'"
+    - >
+      TAG=${CI_COMMIT_SHA} docker compose --project-name test-migrations -f docker-compose.test.yml
+#     ниже нужно перечислить все аппки в которых есть миграции. при создании новой аппки необходимо добавить её сюда
+      run --rm backend /bin/sh -c "poetry run python3 manage.py makemigrations test_app --check"
+  after_script:
+    - docker rm $(docker stop test-migrations-db_${CI_COMMIT_SHORT_SHA}-1)
+  needs: ["build:backend"]

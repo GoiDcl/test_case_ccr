@@ -1,0 +1,25 @@
+services:
+  backend:
+    restart: "no"
+    build:
+      context: ./backend
+    image: python:3.12-slim
+    entrypoint: sh wait-for db_${CI_COMMIT_SHORT_SHA}:5432 -- ./entrypoint.test.sh
+    depends_on:
+      - db_${CI_COMMIT_SHORT_SHA}
+      - redis
+    environment:
+      - DB_HOST=db_${CI_COMMIT_SHORT_SHA}
+      - DEBUG=False
+      - POSTGRES_PASSWORD=postgres
+
+  db_${CI_COMMIT_SHORT_SHA}:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+
+  redis:
+    image: redis:8.0-alpine
+    restart: "no"

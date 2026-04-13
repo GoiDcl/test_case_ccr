@@ -1,0 +1,20 @@
+lint:ruff:
+  stage: linter
+  script:
+    - docker pull ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHA}
+    - docker run --rm ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHA} /bin/sh -c "poetry run ruff check . --statistics"
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(master|develop)$/ && $SKIP_LINTER == "no"
+      changes:
+        - backend/**/*
+
+lint:mypy:
+  stage: linter
+  script:
+    - docker pull ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHA}
+    - docker run --rm ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHA} /bin/sh -c "poetry run mypy --config-file setup.cfg ."
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^(master|develop)$/ && $SKIP_LINTER == "no"
+      changes:
+        - backend/**/*
