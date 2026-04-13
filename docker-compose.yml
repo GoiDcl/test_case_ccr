@@ -45,6 +45,16 @@ services:
       - redis
     <<: *app_environment
 
+  celery_beat:
+    image: python:3.12-slim
+    build:
+      context: ./backend
+    command: celery -A config beat -l info --pidfile=/tmp/celeryd.pid
+    depends_on:
+      - db
+      - redis
+    <<: *app_environment
+
 volumes:
   static:
   redisdata:

@@ -22,3 +22,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./backend/:/app/
+
+  celery_beat:
+    restart: unless-stopped
+    volumes:
+      - ./backend/:/app/
