@@ -83,6 +83,8 @@ POSTGRES_NAME=postgres
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_HOST_AUTH_METHOD=trust
+
+CELERY_BROKER_URL=redis://redis:6379/0
 ```
 
 ## CI/CD
