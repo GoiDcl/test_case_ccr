@@ -1,4 +1,4 @@
-from django_filters import CharFilter, DateFromToRangeFilter, FilterSet, NumericRangeFilter
+from django_filters import CharFilter, DateTimeFromToRangeFilter, FilterSet, NumericRangeFilter
 
 from event_app.models import Event
 
@@ -11,17 +11,9 @@ class EventFilter(FilterSet):
         label='Целевая рабочая станция'
     )
     rating = NumericRangeFilter(field_name='rating', lookup_expr='range')
-    published = DateFromToRangeFilter(field_name='published_at')
-    starting = DateFromToRangeFilter(field_name='starting_at')
-    finishing = DateFromToRangeFilter(field_name='finishing_at')
+    starting = DateTimeFromToRangeFilter(field_name='starting_at')
+    finishing = DateTimeFromToRangeFilter(field_name='finishing_at')
 
     class Meta:
         model = Event
-        fields = (
-            'name',
-            'published_at',
-            'starting_at',
-            'finishing_at',
-            'location',
-            'rating',
-        )
+        fields = ()

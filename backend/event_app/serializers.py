@@ -16,7 +16,7 @@ class WeatherForecastSerializer(serializers.ModelSerializer):
 
 
 class EventLocationSerializer(serializers.ModelSerializer):
-    weather = WeatherForecastSerializer(many=True, read_only=True)
+    weather = WeatherForecastSerializer(read_only=True)
 
     class Meta:
         model = EventLocation
@@ -68,4 +68,24 @@ class EventSerializer(serializers.ModelSerializer):
             'status',
             'rating',
             'images',
+        )
+
+
+class EventCreateSerializer(serializers.ModelSerializer):
+    published_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    starting_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    finishing_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+
+    class Meta:
+        model = Event
+        fields = (
+            'name',
+            'description',
+            'published_at',
+            'starting_at',
+            'finishing_at',
+            'creator',
+            'location',
+            'status',
+            'rating',
         )

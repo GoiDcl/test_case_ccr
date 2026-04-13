@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'imagekit',
+    'drf_spectacular',
 
     'common',
     'event_app',
@@ -112,6 +113,7 @@ STORAGES = {
 DEFAULT_FILE_STORAGE = STORAGES['default']['BACKEND']
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
     ),
