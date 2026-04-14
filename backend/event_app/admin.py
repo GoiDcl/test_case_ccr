@@ -1,10 +1,7 @@
-import os
 from tempfile import NamedTemporaryFile
 
 from django import forms
-from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.contrib import admin
 from django.forms import Form, FileField
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
@@ -145,19 +142,16 @@ class EventAdmin(admin.ModelAdmin):
     class ExcelFileForm(Form):
         excel_file = FileField()
 
-    @transaction.atomic
     def import_events(self, request):
         if not request.user.is_superuser:
             raise Http404
         if request.method == 'POST':
             excel_file = request.FILES['excel_file']
-            # TODO: celery игнорит файл или ловит ошибку?
-            # with NamedTemporaryFile(dir=BASE_DIR, delete=False, suffix='.xlsx') as temp_file:
-            #     for chunk in excel_file.chunks():
-            #         temp_file.write(chunk)
-            #     temp_path = temp_file.name
-            # import_excel_events_file_task.delay(temp_path)
-            import_excel_events_file_task(excel_file)
+            with NamedTemporaryFile(dir=BASE_DIR, delete=False, suffix='.xlsx') as temp_file:
+                for chunk in excel_file.chunks():
+                    temp_file.write(chunk)
+                temp_path = temp_file.name
+                import_excel_events_file_task.delay(temp_path)
             self.message_user(request, 'Файл с мероприятиями отправлен в обработку.')
             return redirect('.')
 
