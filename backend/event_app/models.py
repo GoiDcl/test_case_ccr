@@ -17,8 +17,9 @@ class EventLocation(models.Model):
         verbose_name='Название',
         max_length=255,
     )
-    coordinates: str = models.TextField(
+    coordinates: str = models.CharField(
         verbose_name='Координаты',
+        max_length=255,
     )
 
     class Meta:
