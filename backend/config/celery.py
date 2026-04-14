@@ -21,6 +21,7 @@ app.conf.beat_schedule = {
     },
 }
 
+
 @setup_logging.connect
 def config_loggers(*args, **kwags) -> None:
     """Подключение логов в Celery."""

@@ -10,6 +10,9 @@ from event_app.constants import WindDirectionChoices, EventStatusChoices
 from event_app.models import Event, EventLocation, WeatherForecast
 
 
+logger = logging.getLogger('celery')
+
+
 @shared_task(bind=True, max_retries=settings.MAX_RETRY_COUNT, default_retry_delay=settings.MAX_RETRY_DELAY)
 def import_excel_events_file_task(self, excel_file):
     """Загрузка файла Excel с мероприятиями."""
@@ -56,7 +59,7 @@ def import_excel_events_file_task(self, excel_file):
         if locations_to_create:
             created_locations = EventLocation.objects.bulk_create(locations_to_create)
             existing_locations.update({location.name: location for location in created_locations})
-            logging.debug(f'Создано новых мест проведения мероприятий: {len(created_locations)}')
+            logger.info(f'Создано новых мест проведения мероприятий: {len(created_locations)}')
 
         existing_events = set(
             Event.objects.filter(name__in=events_dict).values_list('name', flat=True)
@@ -70,10 +73,10 @@ def import_excel_events_file_task(self, excel_file):
             events_to_create.append(Event(**data, location=location))
         if events_to_create:
             new_events = Event.objects.bulk_create(events_to_create)
-            logging.debug(f'Создано новых мероприятий: {len(new_events)}')
+            logger.info(f'Создано новых мероприятий: {len(new_events)}')
 
     except Exception as exception:
-        logging.exception(f'Возникла ошибка при импорте мероприятий: {exception}')
+        logger.exception(f'Возникла ошибка при импорте мероприятий: {exception}')
         raise self.retry(exc=exception)
     finally:
         import os
@@ -96,13 +99,13 @@ def check_event_statuses(self):
             events_to_update.append(event)
     if events_to_update:
         updated = Event.objects.bulk_update(events_to_update, ['status'])
-        logging.debug(f'Обновлено мероприятий: {updated}')
+        logger.info(f'Обновлено мероприятий: {updated}')
     if events_to_notify:
         try:
             for event in events_to_notify:
                 event.send_email()
         except Exception as exception:
-            logging.exception(f'Ошибка при рассылке: {exception}')
+            logger.exception(f'Ошибка при рассылке: {exception}')
             raise self.retry(exc=exception)
 
 
@@ -141,14 +144,14 @@ def weather_forecasts_update_task(self):
     if forecasts:
         try:
             updated = WeatherForecast.objects.bulk_update(forecasts, fields)
-            logging.debug(f'Обновлено прогнозов погоды: {len(updated)}')
+            logger.info(f'Обновлено прогнозов погоды: {updated}')
         except Exception as exception:
-            logging.exception(f'Ошибка при обновлении прогнозов погоды: {exception}')
+            logger.exception(f'Ошибка при обновлении прогнозов погоды: {exception}')
             raise self.retry(exc=exception)
     if new_forecasts:
         try:
             created = WeatherForecast.objects.bulk_create(new_forecasts)
-            logging.debug(f'Создано прогнозов погоды: {len(created)}')
+            logger.info(f'Создано прогнозов погоды: {len(created)}')
         except Exception as exception:
-            logging.exception(f'Обновлено прогнозов погоды: {exception}')
+            logger.exception(f'Ошибка при создании прогнозов погоды: {exception}')
             raise self.retry(exc=exception)

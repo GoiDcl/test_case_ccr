@@ -123,6 +123,33 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
 }
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s - %(asctime)s - %(name)s - %(message)s'
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'backend_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'backend.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'celery': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'backend': {'handlers': ['console', 'backend_file'], 'level': 'INFO', 'propagate': False},
+    },
+}
+
 LANGUAGE_CODE = 'ru-ru'
 
 TIME_ZONE = 'Europe/Moscow'
