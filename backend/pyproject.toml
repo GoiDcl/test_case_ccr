@@ -37,6 +37,11 @@ openpyxl = "^3.1.5"
 django-debug-toolbar = "^4.1.0"
 isort = "^5.6.4"
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+addopts = "-vvv --no-migrations -p no:warnings"
+python_files = "pytests_*.py pytest_*.py pytests.py tests.py test_*.py *_test.py *_tests.py"
+
 [build-system]
 requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"

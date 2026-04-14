@@ -60,6 +60,7 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = (
+            'id',
             'name',
             'description',
             'published_at',
@@ -81,6 +82,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = (
+            'id',
             'name',
             'description',
             'published_at',
@@ -100,3 +102,4 @@ class EventCreateSerializer(serializers.ModelSerializer):
                 errors[field] = 'Дата не может быть в прошлом!'
         if errors:
             raise ValidationError(errors)
+        return data

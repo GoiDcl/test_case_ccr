@@ -1,13 +1,10 @@
 from datetime import datetime
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.core.validators import MinValueValidator, MaxValueValidator, BaseValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.template.loader import render_to_string
-from django.utils import timezone
-from django.utils.deconstruct import deconstructible
 from imagekit.processors import ResizeToFit
 
 from common.fields import JpegImageSpecField

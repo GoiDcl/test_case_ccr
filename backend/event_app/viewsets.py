@@ -11,7 +11,7 @@ from rest_framework import viewsets, serializers
 
 from common.permissions import SuperuserCUDAuthRetrievePublished, SuperuserCRUD
 from event_app.filters import EventFilter
-from event_app.models import Event
+from event_app.models import Event, EventLocation
 from event_app.serializers import EventSerializer, EventLocationSerializer, EventCreateSerializer
 
 
@@ -354,5 +354,6 @@ class EventViewSet(viewsets.ModelViewSet):
 )
 @extend_schema(tags=["Места проведения мероприятий"])
 class EventLocationViewSet(viewsets.ModelViewSet):
+    queryset = EventLocation.objects.select_related('weather')
     serializer_class = EventLocationSerializer
     permission_classes = [SuperuserCRUD]

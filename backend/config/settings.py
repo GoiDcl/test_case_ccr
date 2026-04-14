@@ -1,10 +1,12 @@
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'my-very-secret-key')
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test" or "pytest" in sys.argv[0]
 ENABLE_API = os.environ.get('ENABLE_API', 'true').lower() == 'true'
 
 INSTALLED_APPS = [
@@ -35,7 +37,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-if DEBUG:
+if DEBUG and not TESTING:
     INSTALLED_APPS.append('debug_toolbar')
     MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
 
