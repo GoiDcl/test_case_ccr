@@ -3,13 +3,15 @@ from datetime import datetime
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, BaseValidator
 from django.db import models
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.deconstruct import deconstructible
 from imagekit.processors import ResizeToFit
 
 from common.fields import JpegImageSpecField
+from common.validators import NotPastDateTimeValidator
 from event_app.constants import WindDirectionChoices, EventStatusChoices
 
 
@@ -85,12 +87,15 @@ class Event(models.Model):
     )
     published_at: datetime = models.DateTimeField(
         verbose_name='Дата и время публикации',
+        validators=[NotPastDateTimeValidator()],
     )
     starting_at: datetime = models.DateTimeField(
         verbose_name='Дата и время начала',
+        validators=[NotPastDateTimeValidator()],
     )
     finishing_at: datetime = models.DateTimeField(
         verbose_name='Дата и время завершения',
+        validators=[NotPastDateTimeValidator()],
     )
     creator: str = models.CharField(
         verbose_name='Автор',
@@ -117,15 +122,6 @@ class Event(models.Model):
 
     def __str__(self):
         return f"{self.name} {self.starting_at:%Y-%m-%d}"
-
-    def save(self, *args, **kwargs):
-        if self.id is None:
-            if (
-                self.published_at < timezone.now() or
-                self.starting_at < timezone.now() or
-                self.finishing_at < timezone.now()
-            ):
-                raise ValidationError('Нельзя установить прошедшую дату для нового мероприятия')
 
     def send_email(self):
         to = ['123@lol.com']

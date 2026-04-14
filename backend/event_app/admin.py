@@ -75,6 +75,12 @@ class EventAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.select_related('location')
 
+    def get_readonly_fields(self, request, obj=None):
+        """Даты становятся не редактируемыми после создания мероприятия"""
+        if obj:
+            return self.readonly_fields + ('published_at', 'starting_at', 'finishing_at')
+        return self.readonly_fields
+
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [

@@ -1,4 +1,6 @@
+from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from event_app.models import Event, EventLocation, WeatherForecast, EventImage
 
@@ -51,9 +53,9 @@ class EventImageSerializer(serializers.ModelSerializer):
 class EventSerializer(serializers.ModelSerializer):
     location = EventLocationSerializer(read_only=True)
     images = EventImageSerializer(many=True, read_only=True)
-    published_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
-    starting_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
-    finishing_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    published_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    starting_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    finishing_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = Event
@@ -89,3 +91,12 @@ class EventCreateSerializer(serializers.ModelSerializer):
             'status',
             'rating',
         )
+
+    def validate(self, data):
+        date_fields = ['published_at', 'starting_at', 'finishing_at']
+        errors = {}
+        for field in date_fields:
+            if data[field] < timezone.now():
+                errors[field] = 'Дата не может быть в прошлом!'
+        if errors:
+            raise ValidationError(errors)
