@@ -2,16 +2,12 @@
 
 ## Управление проектом
 
-В первую очередь закидываем на сервер файлы проекта.\
-Для универсальности можно сбилдить образы локально и закинуть на свой registry,
-чтобы образы уже были в наличии.\
-Тогда нужно будет заменить в docker-compose файлах
-image на правильный путь до образа в registry.\
-Пример: `registry.gitlab.my-site.ru/my-project/test_case_hitalent/test_app/backend:${TAG:-latest}`
-Когда на сервере есть всё необходимое, поднять проект можно двумя разными способами:
+ - Склонировать проект: `git clone git@github.com:GoiDcl/test_case_ccr.git`
+ - Собрать бэк: `docker-compose -f docker-compose.yml -f docker-compose.override.yml build backend` 
+ - Собрать остальные образы: `docker-compose -f docker-compose.yml -f docker-compose.override.yml build` 
+ - Поднять проект: `docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d`
 
-### С помощью make
-В корне проекта выполняем:
+### Доступные команды make
 
  - `make dev_build`:
 	Собрать образ для разработки/тестирования
@@ -48,24 +44,6 @@ image на правильный путь до образа в registry.\
 
  - `make test PATH=*some path*`:
 	Запустить все тесты из выбранной директории
-
-### С помощью стандартных команд *docker-compose*
-В корне проекта выполняем:
-
- - `docker-compose -f docker-compose.yml -f docker-compose.override.yml up`:
-	Запуск образа для разработки/тестирования. 
- - `docker-compose -f docker-compose.yml -f docker-compose.override.yml up`:
-    Запуск боевого образа. 
- - Для запуска также можно добавить ключи:
-   - `backend`, `db`, `redis`, `nginx`: для запуска отдельных контейнеров (вместе с их зависимостями)
-   - `-d`: для запуска в фоне
-   - `--build`: для сборки перед запуском
- - `docker-compose down`: Отключить образ и удалить контейнеры
- - `docker-compose down -v`: Отключить образ и удалить контейнеры и вольюмы
- - `docker-compose exec backend sh`: Запустить sh в контейнере бэкенда
- - `docker-compose exec backend pytest`: Запустить все тесты
- - `docker-compose exec backend pytest *PATH*`: Запустить все тесты из выбранной директории
- - `docker-compose exec backend python manage.py shell`: Запустить python shell в контейнере бэкенда
 
 ## .env
 Для работы проекта необходим .env файл (локальная разработка) или переменные окружения в gitlab.
